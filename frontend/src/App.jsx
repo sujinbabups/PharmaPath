@@ -4,6 +4,8 @@ import './App.css'
 import Wholesaler from './pages/Wholesaler'
 import HomePage from './pages/HomePage'
 import Manufacture from './pages/Manufacture'
+import Pharmacies from './pages/Pharmacies'
+import Regulators from './pages/Regulators'
 
 
 function App() {
@@ -14,8 +16,9 @@ function App() {
 
       <Route path='/manufacture' element={<Manufacture/>}/>
       <Route path='/wholesaler' element={<Wholesaler/>}/>
-      {/* <Route path='' /> */}
-      
+      <Route path='/pharmacies' element={<Pharmacies/>} />
+      <Route path='/regulators' element={<Regulators/>}/>
+       
       
       </>
 

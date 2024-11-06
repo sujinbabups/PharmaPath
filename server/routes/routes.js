@@ -2,45 +2,46 @@ const express = require("express");
 const router = express.Router();
 const { clientApplication } = require("./client");
 
-  router.get("/getMedicines", async (req, res) => {
-    try {
-      const { batchId } = req.query; 
-  
-      if (!batchId) {
-        return res.status(400).json({
-          success: false,
-          message: "batchId is required",
-        });
-      }
-  
-      let manufactureClient = new clientApplication();
-      let cars = await manufactureClient.submitTxn(
-        "manufacturer",
-        "pharmachain",
-        "Pharma-Chain",
-        "PharmaSupplyChainContract",
-        "getMedicines",
-        "",
-        "getDrugDetails",
-        batchId
-      );
-      const data = new TextDecoder().decode(cars);
-      const value = JSON.parse(data);
-  
-      res.status(200).json({
-        success: true,
-        message: "Data read successfully!",
-        data: { value },
-      });
-    } catch (error) {
-      res.status(500).json({
+router.get("/getMedicines", async (req, res) => {
+  try {
+    const { batchId } = req.query;
+
+    if (!batchId) {
+      return res.status(400).json({
         success: false,
-        message: "An error occurred while fetching data.",
-        data: { error },
+        message: "batchId is required",
       });
     }
-  });
-  
+
+    let manufactureClient = new clientApplication();
+    let medicineData = await manufactureClient.submitTxn(
+      "manufacturer",
+      "pharmachain",
+      "Pharma-Chain",
+      "PharmaSupplyChainContract",
+      "getMedicines",
+      "",
+      "getDrugDetails",
+      batchId
+    );
+
+    const decodedData = new TextDecoder().decode(medicineData);
+    const parsedData = JSON.parse(decodedData);
+
+    res.status(200).json({
+      success: true,
+      message: "Data read successfully!",
+      data: parsedData,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching data.",
+      error: error.message || "Unknown error",
+    });
+  }
+});
+
 router.post("/registerMedicine", async (req, res) => {
     try {
       const { batchId, drugName, batchNumber, expirationDate, productionDate, manufacturerId } = req.body;
@@ -79,16 +80,16 @@ router.post("/registerMedicine", async (req, res) => {
     }
   });
   
-// Get all medicines
 router.get("/allMedicines", async (req, res) => {
   try {
     let userClient = new clientApplication();
     const result = await userClient.submitTxn(
-      "regulators",
-      "pharmachain",
-      "Pharma-Chain",
-      "PharmaSupplyChainContract",
-      "allMedicines",
+      "manufacturer",                   
+      "pharmachain",                  
+      "Pharma-Chain",                 
+      "PharmaSupplyChainContract",  
+      "allMedicines",  
+      "",
       "queryAllMedicines"
     );
     res.status(200).json({
@@ -105,7 +106,7 @@ router.get("/allMedicines", async (req, res) => {
   }
 });
 
-// Audit chain
+
 router.get("/auditChain", async (req, res) => {
   try {
     const { batchId } = req.body;
@@ -134,7 +135,7 @@ router.get("/auditChain", async (req, res) => {
   }
 });
 
-// Delete a medicine
+
 router.delete("/deleteMedicine", async (req, res) => {
   try {
     const { batchId } = req.body;
@@ -163,7 +164,43 @@ router.delete("/deleteMedicine", async (req, res) => {
   }
 });
 
-// Distribute a drug
+router.post("/transferToWholesaler", async (req, res) => {
+  try {
+    const { batchId, wholesalerId } = req.body;
+    
+    // Initialize a new instance of the client application
+    let userClient = new clientApplication();
+    
+    // Submit transaction to transfer the medicine to wholesaler
+    const result = await userClient.submitTxn(
+      "manufacturer", 
+      "pharmachain", 
+      "Pharma-Chain", 
+      "PharmaSupplyChainContract", 
+      "transferToWholesaler", 
+      "",
+      "transferToWholesaler", 
+      batchId,
+      wholesalerId
+    );
+
+    // Send a success response with the result
+    res.status(200).json({
+      success: true,
+      message: "Medicine transferred to wholesaler successfully!",
+      data: JSON.parse(new TextDecoder().decode(result)),
+    });
+  } catch (error) {
+    // Send an error response if the transaction fails
+    res.status(500).json({
+      success: false,
+      message: "Error transferring medicine to wholesaler.",
+      data: { error: error.message },
+    });
+  }
+});
+
+
 router.post("/distributeDrug", async (req, res) => {
   try {
     const { batchId, wholesalerId, transitTime, condition } = req.body;
@@ -195,7 +232,8 @@ router.post("/distributeDrug", async (req, res) => {
   }
 });
 
-// Verify and dispense drug
+
+
 router.post("/verifyAndDispense", async (req, res) => {
   try {
     const { batchId, pharmacyId } = req.body;
@@ -225,7 +263,6 @@ router.post("/verifyAndDispense", async (req, res) => {
   }
 });
 
-// Read order
 router.get("/readOrder", async (req, res) => {
   try {
     const { orderId } = req.body;
@@ -253,7 +290,6 @@ router.get("/readOrder", async (req, res) => {
   }
 });
 
-// Create new order
 router.post("/newOrder", async (req, res) => {
   try {
     const { batchId, drugName, dosage, quantity, pharmacyName } = req.body;
@@ -293,4 +329,3 @@ module.exports = router;
 
 
 
-module.exports = router;

@@ -68,9 +68,19 @@ class clientApplication {
             else if(txnType=="getOrders"){
                 resultBytes=await contract.evaluateTransaction(txnName,...args)
             }
-            else if(txnType=="queryAllMedicines"){
+            else if(txnType=="allMedicines"){
                 resultBytes=await contract.evaluateTransaction(txnName,...args)
             }
+            else if(txnType=="readOrder"){
+                resultBytes=await contract.evaluateTransaction(txnName,...args)
+            }
+            else if(txnType=="deleteOrder"){
+                resultBytes=await contract.submitTransaction(txnName,...args)
+            }
+            else if(txnType=="transferToWholesaler"){
+                resultBytes=await contract.submitTransaction(txnName,...args)
+            }
+       
             else {
                 console.log("Invalid txnType", txnType);
             }

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Building2, Truck, Store, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import '../App.css'
 
 const HomePage = () => {
   const navigate = useNavigate();
