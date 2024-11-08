@@ -44,7 +44,7 @@ router.get("/getMedicines", async (req, res) => {
 
 router.post("/registerMedicine", async (req, res) => {
     try {
-      const { batchId, drugName, batchNumber, expirationDate, productionDate, manufacturerId } = req.body;
+      const { batchId, drugName, batchNumber,quantity, expirationDate, productionDate, manufacturerId } = req.body;
   
       // Initialize the client application for the manufacturer organization
       let ManufacturerClient = new clientApplication();
@@ -60,7 +60,8 @@ router.post("/registerMedicine", async (req, res) => {
         "registerDrug",          
         batchId,               
         drugName,                      
-        batchNumber,               
+        batchNumber,
+        quantity,               
         expirationDate,              
         productionDate,            
         manufacturerId                 
@@ -106,30 +107,68 @@ router.get("/allMedicines", async (req, res) => {
   }
 });
 
-
-router.get("/auditChain", async (req, res) => {
+router.post("/verifyMedicine", async (req, res) => {
   try {
-    const { batchId } = req.body;
+    const { batchId,remarks} = req.body;
+    if (!batchId ) {
+      return res.status(400).json({
+        success: false,
+        message: "Batch is required.",
+      });
+    }
+
     let userClient = new clientApplication();
     const result = await userClient.submitTxn(
       "regulators",
       "pharmachain",
       "Pharma-Chain",
       "PharmaSupplyChainContract",
-      "auditChain",
+      "varifyDrugs",
       "",
-      "auditSupplyChain",
-      batchId
+      "verifyTemperatureControl",
+  
+      batchId,
+      remarks
     );
+
     res.status(200).json({
       success: true,
-      message: "Audit details retrieved successfully!",
+      message: "Medicine verified successfully!",
       data: JSON.parse(new TextDecoder().decode(result)),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: "Error retrieving audit details.",
+      message: "Error verifying medicine.",
+      data: { error },
+    });
+  }
+});
+
+
+router.post("/getHistory", async (req, res) => {
+  try {
+    const { batchId } = req.body;
+    let userClient = new clientApplication();
+    const result = await userClient.submitTxn(
+      "regulators", 
+      "pharmachain", 
+      "Pharma-Chain", 
+      "PharmaSupplyChainContract", 
+      "medicineHistory", 
+      "",
+      "getMedicineHistory",
+      batchId
+    );
+    res.status(200).json({
+      success: true,
+      message: "Medicine History retrieved successfully!",
+      data: JSON.parse(new TextDecoder().decode(result)),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving history details.",
       data: { error },
     });
   }
@@ -184,14 +223,13 @@ router.post("/transferToWholesaler", async (req, res) => {
       wholesalerId
     );
 
-    // Send a success response with the result
     res.status(200).json({
       success: true,
       message: "Medicine transferred to wholesaler successfully!",
       data: JSON.parse(new TextDecoder().decode(result)),
     });
   } catch (error) {
-    // Send an error response if the transaction fails
+    
     res.status(500).json({
       success: false,
       message: "Error transferring medicine to wholesaler.",
@@ -200,10 +238,32 @@ router.post("/transferToWholesaler", async (req, res) => {
   }
 });
 
+router.get('/getTransferedMedicines', async (req, res) => {
+  try {
+    let userClient = new clientApplication();
+
+      const result = await userClient.submitTxn(
+          "regulators",                    
+          "pharmachain",                   
+          "Pharma-Chain",                  
+          "PharmaSupplyChainContract",     
+          "queryTransferedMedicines",      
+          "",                               
+          "queryTransferredToWholesalerMedicines"  
+      );
+
+      // Send success response with the result
+      res.status(200).send({ message: 'Audit details retrieved successfully', result: new TextDecoder().decode(result) });
+  } catch (error) {
+      console.error("Error invoking queryTransferedMedicines:", error);
+      res.status(500).send({ error: 'Error during query' });
+  }
+});
+
 
 router.post("/distributeDrug", async (req, res) => {
   try {
-    const { batchId, wholesalerId, transitTime, condition } = req.body;
+    const { batchId, wholesalerId, transitTime, condition,quantity } = req.body;
     let userClient = new clientApplication();
     const result = await userClient.submitTxn(
       "wholesaler",
@@ -216,7 +276,8 @@ router.post("/distributeDrug", async (req, res) => {
       batchId,
       wholesalerId,
       transitTime,
-      condition
+      condition,
+      quantity
     );
     res.status(200).json({
       success: true,
@@ -232,6 +293,35 @@ router.post("/distributeDrug", async (req, res) => {
   }
 });
 
+
+router.get("/getTransitMedicine", async (req, res) => {
+  try {
+    let userClient = new clientApplication();
+
+    const result = await userClient.submitTxn(
+      "pharmacies",                 
+      "pharmachain",                
+      "Pharma-Chain",               
+      "PharmaSupplyChainContract",  
+      "queryTransitTransactions",   
+      "",                           
+      "queryMedicinesInTransit"     
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Medicines in transit retrieved successfully!",
+      data: JSON.parse(new TextDecoder().decode(result)),
+    });
+  } catch (error) {
+    console.error("Error querying 'In Transit' medicines:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error querying medicines in transit.",
+      data: { error: error.toString() },
+    });
+  }
+});
 
 
 router.post("/verifyAndDispense", async (req, res) => {
@@ -268,12 +358,14 @@ router.get("/readOrder", async (req, res) => {
     const { orderId } = req.body;
     let userClient = new clientApplication();
     const result = await userClient.submitTxn(
-      "manufacturer",
-      "pharmachain",
-      "Pharma-Chain",
-      "OrderContract",
-      "readOrder",
+      "pharmacies",                 
+      "pharmachain", 
+      "Pharma-Chain",                 
+      "OrderContract",   
       "getOrders",
+      "",
+      "readOrder",          
+      
       orderId
     );
     res.status(200).json({
@@ -289,41 +381,83 @@ router.get("/readOrder", async (req, res) => {
     });
   }
 });
-
 router.post("/newOrder", async (req, res) => {
   try {
-    const { batchId, drugName, dosage, quantity, pharmacyName } = req.body;
+    // Destructure fields from req.body as sent from the frontend
+    const { drugName, dosage, quantity, pharmacyName } = req.body;
+    
+    // Generate an orderId or receive it from the frontend
+    const orderId = `Order-${Date.now()}`; // or use any unique identifier
+
+    // Convert fields into Buffer objects as required by Hyperledger Fabric
     const transientData = {
-      batchId: Buffer.from(batchId),
       drugName: Buffer.from(drugName),
       dosage: Buffer.from(dosage),
       quantity: Buffer.from(quantity),
       pharmacyName: Buffer.from(pharmacyName),
     };
+
     let userClient = new clientApplication();
     const result = await userClient.submitTxn(
-      "pharmacies",
-      "pharmachain",
-      "Pharma-Chain",
-      "OrderContract",
-      "newOrder",
-      transientData,
-      "createOrder",
-      "Order-01"
+      "pharmacies",       // organization
+      "pharmachain",      // channel name
+      "Pharma-Chain",     // chaincode name
+      "OrderContract",    // contract name
+      "newOrder",         // transaction type
+      transientData,      // transient data
+      "createOrder",      // transaction name
+      orderId             // pass the orderId as the required parameter
     );
+
+    // Decode the result from Buffer and send back response
     res.status(201).json({
       success: true,
       message: "Order created successfully!",
-      data: JSON.parse(new TextDecoder().decode(result)),
+      // data: JSON.parse(new TextDecoder().decode(result)), // uncomment if result parsing is needed
     });
   } catch (error) {
+    console.error("Error creating order:", error); // Log server error details
     res.status(500).json({
       success: false,
       message: "Error in creating order.",
-      data: { error },
+      data: { error: error.message },
     });
   }
 });
+
+router.get("/readAllOrders", async (req, res) => {
+  try {
+    let userClient = new clientApplication();
+    const result = await userClient.submitTxn(
+      "pharmacies",                   // organization
+      "pharmachain",                  // channel name
+      "Pharma-Chain",                 // chaincode name
+      "OrderContract",                // contract name
+      "getOrders",                    // transaction type, set up for evaluateTransaction
+      {},                             // empty object for transientData
+      "readAllOrders"                 // chaincode function name
+    );
+
+    // Decode and parse the result if it's a Buffer or Uint8Array
+    const decodedResult = new TextDecoder().decode(result);
+    const orders = JSON.parse(decodedResult);
+
+    res.status(200).json({
+      success: true,
+      message: "All orders retrieved successfully!",
+      data: orders,
+    });
+  } catch (error) {
+    console.error("Error retrieving all orders:", error); // Log server error details
+    res.status(500).json({
+      success: false,
+      message: "Error in retrieving all orders.",
+      data: { error: error.message || error },
+    });
+  }
+});
+
+
 
 module.exports = router;
 

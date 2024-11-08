@@ -2,7 +2,10 @@ import React, {  useState } from "react";
 import { Layout, Home, Package, ClipboardList } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect } from "react";
-// import debounce from 'lodash/debounce';
+import TransferModal from "../components/TransferModal";
+
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 
@@ -10,6 +13,7 @@ const initialFormState = {
   batchId: "",
   drugName: "",
   batchNumber: "",
+  quantity:"",
   expirationDate: "",
   productionDate: "",
   manufacturerId: ""
@@ -40,9 +44,10 @@ const Manufacture = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeComponent, setActiveComponent] = useState("register");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [wholesalerId, setWholesalerId] = useState('');
+  const [isModalOpen, setModalOpen] = useState(false);
 
+
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -69,12 +74,13 @@ const Manufacture = () => {
       if (!response.ok) {
         throw new Error(data.message || "Failed to register drug");
       }
+      
+      
+
 
       setRegisteredDrugs(data);
       setFormData(initialFormState);
-      setSuccessMessage("Drug registered successfully!");
-      
-      // Refresh all drugs list if we're showing it
+      toast.success("Drug registered successfully!");
       if (activeComponent === "allMedicines") {
         fetchAllMedicines();
       }
@@ -188,6 +194,7 @@ const Manufacture = () => {
 
       if (data.success) {
         setSuccessMessage("Medicine deleted successfully!");
+        toast.success("Deleted")
         setSearchedDrug([]);
         setSearchBatchId("");
         
@@ -223,38 +230,41 @@ const Manufacture = () => {
     setSuccessMessage("");
   }, [activeComponent]);
 
-  const transferToWholesaler = async () => {
+
+  const handleTransferClick = () => {
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+  };
+
+  const handleTransfer = async (medicineId, wholesalerId) => {
     try {
-      const response = await fetch('/transferToWholesaler', {
+      const response = await fetch('/api/transferToWholesaler', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          batchId,
-          wholesalerId,
-        }),
+        body: JSON.stringify({ batchId: medicineId, wholesalerId }),
       });
 
       const data = await response.json();
-
       if (response.ok) {
-        alert(data.message); // Success message
-        setIsModalOpen(false); // Close modal on success
+        alert('Medicine transferred to wholesaler successfully!');
       } else {
-        alert(data.message); // Error message
+        alert(data.message || 'Failed to transfer medicine to wholesaler.');
       }
-    } catch (error) {
-      console.error('An error occurred:', error);
-      alert('An error occurred while transferring medicine.');
+    } catch (err) {
+      alert('Error transferring medicine to wholesaler.');
     }
   };
- 
 
  
   
   // Render the table rows
   const renderAllMedicinesTable = () => {
+ 
     return (
       <table className="min-w-full border-collapse bg-white">
         <thead className="bg-gray-50">
@@ -265,7 +275,7 @@ const Manufacture = () => {
             <th className="px-4 py-2 border-b">Quantity</th>         
             <th className="px-4 py-2 border-b">Expiration Date</th>
             <th className="px-4 py-2 border-b">Manufacturer ID</th>
-            <th className="px-4 py-2 border-b">Owner</th>
+            {/* <th className="px-4 py-2 border-b">Owner</th> */}
             <th className="px-4 py-2 border-b">Production Date</th>
             <th className="px-4 py-2 border-b">Status</th>
           </tr>
@@ -279,7 +289,7 @@ const Manufacture = () => {
               <td className="px-4 py-2 border-b">{medicine.quantity}</td>
               <td className="px-4 py-2 border-b">{medicine.expirationDate}</td>
               <td className="px-4 py-2 border-b">{medicine.manufacturerId}</td>
-              <td className="px-4 py-2 border-b">{medicine.owner}</td>
+              {/* <td className="px-4 py-2 border-b">{medicine.owner}</td> */}
               <td className="px-4 py-2 border-b">{medicine.productionDate}</td>
               <td className="px-4 py-2 border-b">{medicine.status}</td>
             </tr>
@@ -299,6 +309,7 @@ const Manufacture = () => {
   }
 
   return (
+    <>   <ToastContainer/>
     <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 shadow-md">
       <table className="w-full border-collapse bg-white text-left text-sm text-gray-700">
         <thead className="bg-gray-50">
@@ -348,10 +359,8 @@ const Manufacture = () => {
       </table>
       <div className="p-4 flex gap-4">
 
-      <button
-          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-          onClick={openModal}
-        >
+      <button onClick={handleTransferClick}
+          className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
           Transfer to Wholesaler
         </button>
         <button
@@ -366,60 +375,23 @@ const Manufacture = () => {
         >
           Cancel
         </button>
+        <TransferModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onTransfer={handleTransfer}
+      />
       </div>
     </div>
-
+    </>
     
   );
 };
 
-const openModal = () => {
-  if (searchBatchId.trim() === '') {
-    alert('Please enter a Batch ID first.');
-    return;
-  }
-  setIsModalOpen(true);
-};
 
-// Close modal function
-const closeModal = () => {
-  setWholesalerId(''); 
-  setIsModalOpen(false);
-};
-
-
-
-{isModalOpen && (
-  <div className="fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center z-50">
-    <div className="bg-white rounded-lg shadow-lg w-96 p-6">
-      <h2 className="text-lg font-semibold mb-4">Enter Wholesaler ID</h2>
-      <input
-        type="text"
-        placeholder="Wholesaler ID"
-        value={wholesalerId}
-        onChange={(e) => setWholesalerId(e.target.value)}
-        className="border border-gray-300 rounded-md w-full px-4 py-2 mb-4"
-      />
-      <div className="flex justify-end space-x-2">
-        <button
-          onClick={transferToWholesaler}
-          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-        >
-          Confirm Transfer
-        </button>
-        <button
-          onClick={closeModal}
-          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
 
 
   const renderComponent = () => {
+    
     switch (activeComponent) {
       case "register":
         return (
@@ -497,19 +469,14 @@ const closeModal = () => {
               )}
             </div>
           );
-      case "checkOrder":
-        return (
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4">Order Management</h2>
-            <div className="p-4 bg-gray-50 rounded-md">Check Order Component</div>
-          </div>
-        );
+
       default:
         return null;
     }
   };
 
   return (
+    
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
@@ -520,7 +487,7 @@ const closeModal = () => {
             </div>
             <Link to="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
               <Home size={20} />
-              <span>Home</span>
+              <span>Logout</span>
             </Link>
           </div>
         </div>
@@ -549,18 +516,13 @@ const closeModal = () => {
             isActive={activeComponent === "getMedicines"}
             onClick={() => setActiveComponent("getMedicines")}
           />
-          <NavButton
-            icon={ClipboardList}
-            label="Check Orders"
-            value="checkOrder"
-            isActive={activeComponent === "checkOrder"}
-            onClick={() => setActiveComponent("checkOrder")}
-          />
+  
         </div>
 
         {renderComponent()}
       </main>
     </div>
+   
   );
 };
 

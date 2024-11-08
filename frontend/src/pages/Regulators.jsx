@@ -1,58 +1,156 @@
-import React, { useState } from 'react';
-import { Layout, Home, Package, ClipboardList, AlertTriangle, CheckCircle, Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Layout, Home, Package, ClipboardList, AlertTriangle, CheckCircle, Search, History } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const Regulators = () => {
   const [activeComponent, setActiveComponent] = useState('verifyDrugs');
-  const [medicines, setMedicines] = useState([
-    { id: 1, name: 'Aspirin', price: 5.99, quantity: 100, batch: 'ABC123', manufacturer: 'Acme Pharmaceuticals' },
-    { id: 2, name: 'Ibuprofen', price: 7.99, quantity: 50, batch: 'DEF456', manufacturer: 'Globex Inc.' },
-    { id: 3, name: 'Paracetamol', price: 3.99, quantity: 75, batch: 'GHI789', manufacturer: 'Stark Enterprises' },
-  ]);
+  const [medicineId, setMedicineId] = useState('');
+  const [historyData, setHistoryData] = useState(null); 
+  const [loading, setLoading] = useState(false); 
+  const [error, setError] = useState(null); 
 
-  const verifyAndDispenseDrug = (medicineId) => {
-    // Implement drug verification and dispensation logic
-    const medicine = medicines.find((m) => m.id === medicineId);
-    alert(`Verifying ${medicine.name} (Batch: ${medicine.batch}, Manufacturer: ${medicine.manufacturer})`);
+  const [medicines, setMedicines] = useState([]);
+
+  // const verifyAndDispenseDrug = (medicineId) => {
+  //   const medicine = medicines.find((m) => m.id === medicineId);
+  //   alert(`Verifying ${medicine.name} (Batch: ${medicine.batch}, Manufacturer: ${medicine.manufacturer})`);
+  // };
+
+  // const auditSupplyChain = (medicineId) => {
+  //   const medicine = medicines.find((m) => m.id === medicineId);
+  //   alert(`Supply Chain Audit for ${medicine.name}:\nBatch: ${medicine.batch}\nManufacturer: ${medicine.manufacturer}`);
+  // };
+
+  // const getDrugDetails = (medicineId) => {
+  //   const medicine = medicines.find((m) => m.id === medicineId);
+  //   alert(`Name: ${medicine.name}\nPrice: $${medicine.price}\nQuantity: ${medicine.quantity}\nBatch: ${medicine.batch}\nManufacturer: ${medicine.manufacturer}`);
+  // };
+
+  const getHistory = async () => {
+    setLoading(true);
+    setError(null);
+    setHistoryData(null); 
+
+    try {
+      const response = await fetch(`/api/getHistory?batchId=${medicineId}`, {
+        method: 'POST', 
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ batchId: medicineId }), 
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setHistoryData(data.data); // Update state with history data
+      } else {
+        setError(data.message || 'Failed to retrieve history.');
+      }
+    } catch (err) {
+      setError('Error retrieving history data.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const auditSupplyChain = (medicineId) => {
-    // Implement supply chain audit logic
-    const medicine = medicines.find((m) => m.id === medicineId);
-    alert(`Supply Chain Audit for ${medicine.name}:\nBatch: ${medicine.batch}\nManufacturer: ${medicine.manufacturer}`);
-  };
+  useEffect(() => {
 
-  const getDrugDetails = (medicineId) => {
-    // Implement drug details retrieval logic
-    const medicine = medicines.find((m) => m.id === medicineId);
-    alert(`Name: ${medicine.name}\nPrice: $${medicine.price}\nQuantity: ${medicine.quantity}\nBatch: ${medicine.batch}\nManufacturer: ${medicine.manufacturer}`);
+    const fetchAllMedicines = async (signal) => {
+      setError(null);
+      
+      try {
+        const response = await fetch("/api/allMedicines", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal,
+        });
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+  
+        if (data.success) {
+          const medicines = data.data.map((item) => item.Record);
+          setMedicines(medicines);
+          console.log("all medidicines :",medicines);
+          
+        } else {
+          throw new Error(data.message || "Failed to fetch medicines");
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          console.log('Fetch aborted');
+          return;
+        }
+        console.error("Error:", err);
+        setError(err.message || "An error occurred while fetching medicines.");
+      } finally {
+      }
+    };
+    fetchAllMedicines();
+
+  }, []);
+
+  const verifyMedicine = async (batchId) => {
+    const remarks = prompt("Enter remarks for verification:");
+    if (!remarks) return;
+  
+    try {
+      const response = await fetch(`/api/verifyMedicine`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ batchId, remarks, status: "verified" }),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        alert('Medicine verified successfully!');
+        // Optionally, refetch the list or update the specific item in the list
+      } else {
+        alert(data.message || 'Failed to verify medicine.');
+      }
+    } catch (err) {
+      alert('Error verifying medicine.');
+    }
   };
 
   const renderComponent = () => {
     switch (activeComponent) {
       case 'verifyDrugs':
-        return (
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-semibold mb-4">Verify Drugs</h2>
-            <div className="space-y-4">
-              {medicines.map((medicine) => (
+      return (
+        <div className="bg-white p-6 rounded-lg shadow-lg">
+          <h2 className="text-2xl font-semibold mb-4">Verify Drugs</h2>
+          <div className="space-y-4">
+            {medicines && medicines.length > 0 ? (
+              medicines.map((medicine) => (
                 <div
                   key={medicine.id}
                   className="bg-gray-50 p-4 rounded-md flex justify-between items-center"
                 >
                   <div>
-                    <h3 className="text-lg font-medium">{medicine.name}</h3>
-                    <p className="text-gray-500">Batch: {medicine.batch}</p>
-                    <p className="text-gray-500">Manufacturer: {medicine.manufacturer}</p>
+                    <h3 className="text-lg font-medium">{medicine.drugName}</h3>
+                    <p className="text-gray-500">Batch: {medicine.batchId}</p>
+                    <p className="text-gray-500">Manufacturer: {medicine.owner}</p>
+                    <p className="text-gray-500">Expiry Date: {medicine.expirationDate}</p>
+                    <p className='text-gray-500'>Status :{medicine.status}</p>
+                    <p className="text-gray-500">Condition: {medicine.transportConditions}</p>
+
+
                   </div>
                   <div className="flex items-center space-x-4">
                     <button
-                      onClick={() => verifyAndDispenseDrug(medicine.id)}
+                      onClick={() => verifyMedicine(medicine.batchId)}
                       className="text-green-500 hover:text-green-600"
                     >
                       <CheckCircle size={18} />
                     </button>
-                    <button
+                    {/* <button
                       onClick={() => auditSupplyChain(medicine.id)}
                       className="text-yellow-500 hover:text-yellow-600"
                     >
@@ -64,10 +162,51 @@ const Regulators = () => {
                     >
                       <Search size={18} />
                     </button>
+                    <button
+                      onClick={() => {
+                        setMedicineId(medicine.batch);
+                        getHistory();
+                      }}
+                      className="text-purple-500 hover:text-purple-600"
+                    >
+                      <History size={18} />
+                    </button> */}
                   </div>
                 </div>
-              ))}
+              ))
+            ) : (
+              <p>No medicines found.</p>
+            )}
+          </div>
+        </div>
+      );
+      case 'getHistory':
+        return (
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h2 className="text-2xl font-semibold mb-4">Get Medicine History</h2>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Enter Batch ID"
+                value={medicineId}
+                onChange={(e) => setMedicineId(e.target.value)}
+                className="w-full p-2 border rounded-md"
+              />
+              <button
+                onClick={getHistory}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
+              >
+                Show History
+              </button>
             </div>
+            {loading && <p>Loading...</p>}
+            {error && <p className="text-red-600">{error}</p>}
+            {historyData && (
+              <div className="mt-4">
+                <h3 className="text-xl font-semibold">History Data:</h3>
+                <pre className="bg-gray-100 p-4 rounded-md mt-2">{JSON.stringify(historyData, null, 2)}</pre>
+              </div>
+            )}
           </div>
         );
       default:
@@ -91,7 +230,6 @@ const Regulators = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
@@ -101,20 +239,17 @@ const Regulators = () => {
             </div>
             <Link to="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
               <Home size={20} />
-              <span>Home</span>
+              <span>Logout</span>
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Navigation Buttons */}
         <div className="flex flex-wrap gap-4 mb-8">
           <NavButton icon={Package} label="Verify Drugs" value="verifyDrugs" />
+          <NavButton icon={ClipboardList} label="Get History" value="getHistory" />
         </div>
-
-        {/* Content Area */}
         <div className="transition-all duration-300 ease-in-out">{renderComponent()}</div>
       </main>
     </div>

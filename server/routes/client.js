@@ -48,12 +48,18 @@ class clientApplication {
                 resultBytes = await contract.submitTransaction(txnName, ...args);
             } else if (txnType == "getMedicines") {
                 resultBytes = await contract.evaluateTransaction(txnName, ...args);
-            } else if (txnType == "newOrder") {
-                await contract.submit(txnName, {
+            }else if (txnType == "newOrder") {
+                resultBytes = await contract.submit(txnName, {
                     arguments: [...args],
                     transientData: transientData,
+                    endorsingOrganizations: ['PharmaciesMSP', 'WholesalerMSP','RegulatorsMSP']
+                
                 });
-            }else if(txnType=="distributeDrug"){
+                
+            }
+            
+            
+            else if(txnType=="distributeDrug"){
                 resultBytes=await contract.submitTransaction(txnName, ...args);
             }
             else if(txnType=="verifyAndDispenseDrug"){
@@ -80,6 +86,22 @@ class clientApplication {
             else if(txnType=="transferToWholesaler"){
                 resultBytes=await contract.submitTransaction(txnName,...args)
             }
+             else if(txnType=="medicineHistory"){
+                resultBytes=await contract.evaluateTransaction(txnName,...args)
+            }
+            else if(txnType=="varifyDrugs"){
+                resultBytes=await contract.submitTransaction(txnName,...args)
+            }
+            else if(txnType=="queryTransferedMedicines"){
+                resultBytes=await contract.submitTransaction(txnName,...args)
+            }
+            else if(txnType=="queryTransitTransactions"){
+                resultBytes=await contract.evaluateTransaction(txnName,...args)
+            }
+            else if(txnType=="readAllOrders"){
+                resultBytes=await contract.evaluateTransaction(txnName,...args)
+            }
+
        
             else {
                 console.log("Invalid txnType", txnType);

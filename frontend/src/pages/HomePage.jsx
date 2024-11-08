@@ -1,8 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Building2, Truck, Store, Scale } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import LoginModal from '../components/LoginModal';
 
 const HomePage = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPath, setSelectedPath] = useState(null);
+
   const navigate = useNavigate();
 
   const links = [
@@ -35,6 +39,16 @@ const HomePage = () => {
       path: '/regulators'
     }
   ];
+
+  const handleLinkClick = (path) => {
+    setSelectedPath(path);
+    setIsModalOpen(true); // Open the modal on link click
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    if (selectedPath) navigate(selectedPath); // Navigate after login
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -76,7 +90,7 @@ const HomePage = () => {
             <div
               key={link.title}
               className="relative bg-white rounded-lg shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden cursor-pointer"
-              onClick={() => navigate(link.path)}
+              onClick={() => handleLinkClick(link.path)}
             >
               <div className="p-6">
                 <div className={`${link.color} w-16 h-16 rounded-full flex items-center justify-center mb-4`}>
@@ -151,6 +165,8 @@ const HomePage = () => {
           </div>
         </div>
       </footer>
+      <LoginModal isOpen={isModalOpen} onClose={handleCloseModal} />
+
     </div>
   );
 };
