@@ -1,4 +1,4 @@
-PharmaPath
+## PharmaPath
 PharmaPath is a blockchain-based solution built on **Hyperledger Fabric** to ensure transparency, security, and traceability in the pharmaceutical supply chain. The project connects four main participants in the supply chain: manufacturers, wholesalers, pharmacies, and regulators. It automates processes using smart contracts, ensuring the authenticity of medicines and reducing counterfeit drugs.
 
 ---
