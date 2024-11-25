@@ -1,0 +1,50 @@
+Navigation bar styles
+nav {
+  background: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+nav .max-w-7xl {
+  padding: 0 1.5rem;
+}
+
+/* Logo text styling */
+nav h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #4c4f62;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+
+/* Logo hover effect with a glowing shadow and scaling */
+nav h1:hover {
+  color: #05ecba;
+  transform: scale(1.05);
+  text-shadow: 0px 0px 8px rgba(109, 223, 16, 0.8);
+}
+
+/* Add a subtle underline effect on hover */
+nav h1::after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 3px;
+  bottom: -5px;
+  left: 0;
+  background-color: #0dd668;
+  transition: width 0.3s ease;
+}
+
+nav h1:hover::after {
+  width: 100%;
+}
+
+/* Responsive design for mobile screens */
+@media (max-width: 640px) {
+  nav h1 {
+    font-size: 1.5rem;
+  }
+}
