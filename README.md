@@ -36,4 +36,3 @@ PharmaPath is a blockchain-based solution built on **Hyperledger Fabric** to ens
 5. **Database**:
    - CouchDB for storing blockchain state data.
 
----
